@@ -43,8 +43,8 @@ class EventPostSchema(ma.Schema):
 	longitude = fields.String(required=True)
 	latitude = fields.String(required=True)
 	image = fields.String(required=True)
-	created_at = fields.String(required=True)
-	updated_at = fields.String(required=True)
+	created_at = fields.String(required=False)
+	updated_at = fields.String(required=False)
 	deleted_at = fields.String(required=False)
 
 class EventUpdateSchema(ma.Schema):

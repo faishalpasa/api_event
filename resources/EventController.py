@@ -10,9 +10,10 @@ event_update_schema = EventUpdateSchema()
 
 class GetEvents(Resource):
 	def get(self):
-		events = Event.query.all()
+		events = Event.query.order_by(db.desc('id')).filter(Event.deleted_at == None).all()
+
 		events = events_schema.dump(events).data
-		return {'status': 'success', 'data': events}, 200
+		return {'response':200, 'status': 'success', 'result': events}, 200
 
 class PostEvent(Resource):
 	def post(self):
@@ -38,7 +39,8 @@ class PostEvent(Resource):
 			location=json_data['location'],
 			image=json_data['image'],
 			created_at=now.strftime("%Y-%m-%d %H:%M:%S"),
-			updated_at=now.strftime("%Y-%m-%d %H:%M:%S")
+			updated_at=now.strftime("%Y-%m-%d %H:%M:%S"),
+			deleted_at=None
 		)
 
 		db.session.add(event)
@@ -94,6 +96,29 @@ class DeleteEvent(Resource):
 			return {'message': 'Event does not exist'}, 400
 
 		event.deleted_at = now.strftime("%Y-%m-%d %H:%M:%S")
+		db.session.commit()
+
+		result = event_schema.dump(event).data
+
+		return { "status": 'success', 'data': result }, 201
+
+class RestoreEvent(Resource):
+	def post(self):
+		json_data = request.get_json(force=True)
+		if not json_data:
+			return {'message': 'No input data provided'}, 400
+
+		# Validate and deserialize input
+		data, errors = event_update_schema.load(json_data)
+		if errors:
+			return errors, 422
+
+		# Checking data in db
+		event = Event.query.filter_by(id=data['id']).first()
+		if not event:
+			return {'message': 'Event does not exist'}, 400
+
+		event.deleted_at = None
 		db.session.commit()
 
 		result = event_schema.dump(event).data
